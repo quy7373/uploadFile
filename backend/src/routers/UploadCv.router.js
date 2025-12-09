@@ -4,12 +4,25 @@ import {
   uploadQuickCV,
   healthCheck,
 } from "../controllers/UploadCv.js";
-import { uploadCVMiddleware } from "../middlewares/upload.middleware.js";
+import {
+  uploadCVMiddleware,
+  multerErrorHandler,
+} from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
-router.post("/analyze", uploadCVMiddleware.single("cv"), uploadCV);
-router.post("/analyze-quick", uploadCVMiddleware.single("cv"), uploadQuickCV);
-router.get("/health", healthCheck);
+router.post(
+  "/analyze",
+  uploadCVMiddleware.single("cv"),
+  multerErrorHandler,
+  uploadCV
+);
+router.post(
+  "/analyze-quick",
+  uploadCVMiddleware.single("cv"),
+  multerErrorHandler,
+  uploadQuickCV
+);
+router.get("/health", multerErrorHandler, healthCheck);
 
 export default router;

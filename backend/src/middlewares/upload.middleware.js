@@ -36,3 +36,21 @@ export const uploadCVMiddleware = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter,
 });
+export const multerErrorHandler = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    // Lỗi multer (file quá lớn...)
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Lỗi upload file",
+    });
+  }
+
+  next();
+};

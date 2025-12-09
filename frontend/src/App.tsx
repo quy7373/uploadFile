@@ -1,10 +1,9 @@
 import { Routes, Route } from "react-router-dom";
-import CVAnalyzerPage from "./pages/CVAnalyzerPage.tsx";
-
+import CVAnalyzer from "./pages/CVAnalyzer";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<CVAnalyzerPage />} />
+      <Route path="/" element={<CVAnalyzer />} />
     </Routes>
   );
 }

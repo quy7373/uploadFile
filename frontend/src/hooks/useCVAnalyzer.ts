@@ -1,41 +1,88 @@
-import { useState } from "react";
-import { analyzeCV } from "../services/cvService.ts";
-import { CVAnalyzeResponse } from "../types/cv.ts";
+// hooks/useCVAnalyzer.ts
+import React from 'react';
+import { useState, useCallback } from 'react';
+import type { CVAnalyzerState, CVAnalysisResult } from '../types/cv.types';
+import { cvService } from '../services/cv.service';
+import { validateFile } from '../utils/cv.utils';
+import { API_CONFIG, ERROR_MESSAGES } from '../constants/cv.constants';
 
-export function useCVAnalyzer() {
-  const [file, setFile] = useState<File | null>(null);
-  const [jobDescription, setJobDescription] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CVAnalyzeResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export const useCVAnalyzer = () => {
+  const [state, setState] = useState<CVAnalyzerState>({
+    file: null,
+    jobDescription: '',
+    loading: false,
+    result: null,
+    error: null,
+  });
 
-  const handleAnalyze = async () => {
-    if (!file) {
-      setError("Vui lòng chọn file CV");
+  const setFile = useCallback((file: File | null) => {
+    setState((prev) => ({ ...prev, file, error: null, result: null }));
+  }, []);
+
+  const setJobDescription = useCallback((description: string) => {
+    setState((prev) => ({ ...prev, jobDescription: description }));
+  }, []);
+
+  const setError = useCallback((error: string | null) => {
+    setState((prev) => ({ ...prev, error }));
+  }, []);
+
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      
+      if (!selectedFile) return;
+
+      const validationError = validateFile(selectedFile, API_CONFIG.MAX_FILE_SIZE);
+      
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      setFile(selectedFile);
+    },
+    [setFile, setError]
+  );
+
+  const analyzeCV = useCallback(async () => {
+    if (!state.file) {
+      setError(ERROR_MESSAGES.NO_FILE_SELECTED);
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    setState((prev) => ({ ...prev, loading: true, error: null, result: null }));
 
     try {
-      const data = await analyzeCV(file, jobDescription);
-      setResult(data);
-    } catch (err: any) {
-      setError(err.message || "Có lỗi xảy ra");
-    } finally {
-      setLoading(false);
+      const response = await cvService.analyzeCV(state.file, state.jobDescription);
+
+      if (response.success && response.data) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          result: response.data as CVAnalysisResult,
+        }));
+      } else {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: response.message || ERROR_MESSAGES.UNKNOWN_ERROR,
+        }));
+      }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (err) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: ERROR_MESSAGES.SERVER_ERROR,
+      }));
     }
-  };
+  }, [state.file, state.jobDescription, setError]);
 
   return {
-    file,
-    setFile,
-    jobDescription,
+    ...state,
     setJobDescription,
-    loading,
-    result,
-    error,
-    handleAnalyze,
+    handleFileChange,
+    analyzeCV,
   };
-}
+};

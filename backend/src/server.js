@@ -1,15 +1,13 @@
+import "dotenv/config";
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import uploadCvRouter from "./routers/UploadCv.router.js";
 
-dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 
 app.use("/api/cv", uploadCvRouter);
